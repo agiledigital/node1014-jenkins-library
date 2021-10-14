@@ -24,6 +24,7 @@ def call(Map config) {
     }
 
     stage('Install dependencies') {
+      sh "git config --global url.\"https://\".insteadOf git://"
       yarn "install"
     }
 

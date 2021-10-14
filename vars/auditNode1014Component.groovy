@@ -4,41 +4,69 @@
 
 def call(Map config) {
 
-  def artifactDir = "${config.project}-${config.component}-artifacts"
-  def testOutput = "${config.project}-${config.component}-tests.xml"
-
   final yarn = { cmd ->
     ansiColor('xterm') {
       dir(config.baseDir) {
-        sh "NODE_OPTIONS=--max-old-space-size=4096 JEST_JUNIT_OUTPUT=${testOutput} yarn ${cmd}"
+        sh "yarn ${cmd}"
       }
     }
   }
   
   container("node1014-builder") {
 
-    stage('Build Details') {
+    stage('Audit Run Details') {
       echo "Project:   ${config.project}"
       echo "Component: ${config.component}"
       echo "BuildNumber: ${config.buildNumber}"
     }
 
     stage('Audit Production dependencies') {
-      yarn "audit --prod --frozen-lockfile --json > prod.audit"
+      try {
+      yarn "audit --frozen-lockfile --json --groups 'dependencies' > prod.audit"
+     } catch (InterruptedException e) {
+      // Build interupted
+      currentBuild.result = "ABORTED"
+      throw e
+    } catch (e) {
+      // If there was an exception thrown, the build failed
+      currentBuild.result = "UNSTABLE"
+    }
     }
 
     stage('Audit All dependencies') {
-      yarn "audit --frozen-lockfile --json > all.audit"
+      try {
+      yarn "audit --frozen-lockfile --groups 'devDependencies dependencies' --json > all.audit"
+     } catch (InterruptedException e) {
+      // Build interupted
+      currentBuild.result = "ABORTED"
+      throw e
+    } catch (e) {
+      // If there was an exception thrown, the build failed
+      currentBuild.result = "UNSTABLE"
+    }
     }
 
     stage('Show audit results') {
-      yarn "audit --frozen-lockfile --json"
+      try {
+      yarn "audit --frozen-lockfile --groups 'dependencies' > audit.txt"
+     } catch (InterruptedException e) {
+      // Build interupted
+      currentBuild.result = "ABORTED"
+      throw e
+    } catch (e) {
+      // If there was an exception thrown, the build failed
+      currentBuild.result = "UNSTABLE"
+    }
     }
 
     stage('Archive to Jenkins') {
-      def tarName = "audits-node-${config.project}-${config.component}-${config.buildNumber}.tar.gz"
-      sh "tar -czvf \"${tarName}\" *.audit"
-      archiveArtifacts tarName
+      dir(config.baseDir) {
+        def tarName = "audits-node-${config.project}-${config.component}-${config.buildNumber}.tar.gz"
+        sh "tar -czvf \"${tarName}\" all.audit prod.audit"
+        archiveArtifacts tarName
+        slackUploadFile filePath: "audit.txt", initialComment: "${config.component} audit summary", channel: config.slackThead.threadId
+        slackUploadFile filePath: tarName, initialComment:  "${config.component} audit jsonl file:\"${tarName}\"", channel: config.slackThead.threadId
+      }
     }
 
   }
