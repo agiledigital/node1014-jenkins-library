@@ -47,8 +47,13 @@ def call(Map config) {
 
       stage('Package') {
         sh "mkdir -p ${artifactDir}"
+        sh "mkdir -p ${artifactDir}/config"
+          stage('Inject configuration') {
+            sh "mkdir -p  \"${artifactDir}/conf\""
+            sh "cp *.conf \"${artifactDir}/conf\""
 
-        yarn "install --production --ignore-scripts --prefer-offline"
+          }
+        yarn "install --frozen-lockfile --production --ignore-scripts --prefer-offline"
         sh "mv ${config.baseDir}/node_modules ${config.baseDir}/package.json ${artifactDir}"
 
         // The build and dist folders may exisit depending on builder.
