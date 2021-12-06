@@ -47,14 +47,20 @@ def call(Map config) {
 
       stage('Package') {
         sh "mkdir -p ${artifactDir}"
-
+        sh "mkdir -p ${artifactDir}/config"
         yarn "install --production --ignore-scripts --prefer-offline"
         sh "mv ${config.baseDir}/node_modules ${config.baseDir}/package.json ${artifactDir}"
+
+        stage('Inject configuration') {
+          // TODO: Allow ${SETTINGS_CONTEXT} to be overriden
+            // From https://stash.agiledigital.com.au/projects/MCP/repos/docker-builder/browse/builders/play2-multi-build/build.sh
+          sh "cp *.conf \"${artifactDir}/config\""
+        }
 
         // The build and dist folders may exisit depending on builder.
         // Copy them into the artifact if they exist. e.g. React uses build, NodeJS defualt is dist.
         if(fileExists("${config.baseDir}/dist")) {
-          sh "mv ${config.baseDir}/dist ${artifactDir}"
+          sh "mv ${config.baseDir}/dist/* ${artifactDir}"
         }
         
         if(fileExists("${config.baseDir}/build")) {
