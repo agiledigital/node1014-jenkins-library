@@ -48,7 +48,9 @@ def call(Map config) {
       stage('Package') {
         sh "mkdir -p ${artifactDir}"
         sh "mkdir -p ${artifactDir}/config"
-        yarn "install --production --ignore-scripts --prefer-offline"
+
+        yarn "install --frozen-lockfile --production --ignore-scripts --prefer-offline"
+        
         sh "mv ${config.baseDir}/node_modules ${config.baseDir}/package.json ${artifactDir}"
 
         stage('Inject configuration') {
