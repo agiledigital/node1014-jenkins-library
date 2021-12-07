@@ -25,7 +25,7 @@ def call(Map config) {
 
     stage('Install dependencies') {
       sh "git config --global url.\"https://\".insteadOf git://"
-      yarn "install"
+      yarn "install --frozen-lockfile"
     }
 
     stage('Test') {
@@ -48,10 +48,10 @@ def call(Map config) {
       stage('Package') {
         sh "mkdir -p ${artifactDir}"
         sh "mkdir -p ${artifactDir}/config"
+        sh "mkdir -p ${artifactDir}/assest"
 
         yarn "install --frozen-lockfile --production --ignore-scripts --prefer-offline"
         
-        sh "mv ${config.baseDir}/node_modules ${config.baseDir}/package.json ${artifactDir}"
 
         stage('Inject configuration') {
           // TODO: Allow ${SETTINGS_CONTEXT} to be overriden
@@ -62,25 +62,29 @@ def call(Map config) {
         // The build and dist folders may exisit depending on builder.
         // Copy them into the artifact if they exist. e.g. React uses build, NodeJS defualt is dist.
         if(fileExists("${config.baseDir}/dist")) {
-          sh "mv ${config.baseDir}/dist/* ${artifactDir}"
+          sh "mv ${config.baseDir}/dist/* ${artifactDir}/assest"
         }
         
         if(fileExists("${config.baseDir}/build")) {
           sh "mv ${config.baseDir}/build ${artifactDir}"
+          sh "mv ${config.baseDir}/node_modules ${config.baseDir}/package.json ${artifactDir}"
         }
         
         if(fileExists("${config.baseDir}/serverless.yml")) {
           sh "mv ${config.baseDir}/serverless.yml ${artifactDir}"
+          sh "mv ${config.baseDir}/node_modules ${config.baseDir}/package.json ${artifactDir}"
         }
 
         // The static folder and application specific config files 
         // should also be staged if they exist.
         if(fileExists("${config.baseDir}/static")) {
           sh "mv ${config.baseDir}/static ${artifactDir}"
+          sh "mv ${config.baseDir}/node_modules ${config.baseDir}/package.json ${artifactDir}"
         }
 
         if(fileExists("${config.baseDir}/next.config.js")) {
           sh "mv ${config.baseDir}/next.config.js ${artifactDir}"
+          sh "mv ${config.baseDir}/node_modules ${config.baseDir}/package.json ${artifactDir}"
         }
       }
     }
