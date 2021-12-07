@@ -48,7 +48,7 @@ def call(Map config) {
       stage('Package') {
         sh "mkdir -p ${artifactDir}"
         sh "mkdir -p ${artifactDir}/config"
-        sh "mkdir -p ${artifactDir}/assest"
+        sh "mkdir -p ${artifactDir}/assets"
 
         yarn "install --frozen-lockfile --production --ignore-scripts --prefer-offline"
         
@@ -62,7 +62,7 @@ def call(Map config) {
         // The build and dist folders may exisit depending on builder.
         // Copy them into the artifact if they exist. e.g. React uses build, NodeJS defualt is dist.
         if(fileExists("${config.baseDir}/dist")) {
-          sh "mv ${config.baseDir}/dist/* ${artifactDir}/assest"
+          sh "mv ${config.baseDir}/dist/* ${artifactDir}/assets"
         }
         
         if(fileExists("${config.baseDir}/build")) {
